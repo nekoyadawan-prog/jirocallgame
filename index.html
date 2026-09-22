@@ -55,7 +55,7 @@
     }
     #display-area {
       flex: 1;
-      background-image: url('bg.jpg'); /* ゲーム内の背景画像 */
+      background-image: url('bg.jpg');
       background-size: cover;
       background-position: center;
       color: #fff;
@@ -66,7 +66,7 @@
       flex-direction: column;
       justify-content: space-between;
       align-items: center;
-      padding: 15px;
+      padding: 12px;
       text-align: center;
       position: relative;
       overflow: hidden;
@@ -82,11 +82,18 @@
       position: relative;
       z-index: 2;
     }
+    .tencho-cheer {
+      font-size: 13px;
+      font-weight: bold;
+      margin-bottom: 3px;
+      text-shadow: 1px 1px 3px #000, -1px -1px 3px #000;
+      letter-spacing: 0.5px;
+    }
     .tencho-call {
       color: #ffe600;
-      font-size: 16px;
+      font-size: 15px;
       font-weight: bold;
-      margin-bottom: 8px;
+      margin-bottom: 6px;
       text-shadow: 2px 2px 4px #000;
     }
     .customer-call {
@@ -132,6 +139,7 @@
       cursor: pointer;
       margin-top: 8px;
       box-shadow: 0 3px 0 #222;
+      transition: opacity 0.2s, background-color 0.2s;
     }
     .btn-retry:active {
       transform: translateY(2px);
@@ -220,14 +228,11 @@
       text-align: center;
       z-index: 10;
     }
-    
-    /* スタート画面の背景設定 */
     #start-screen {
-      background-image: url('title.jpg'); /* 眼力の強いタイトル画像 */
+      background-image: url('title.jpg');
       background-size: cover;
       background-position: center;
     }
-
     .hidden { display: none !important; }
     .btn-start {
       background: #ffe600;
@@ -252,8 +257,6 @@
       cursor: pointer;
       margin-top: 10px;
     }
-
-    /* 舌打ちトーストの配置を中央へ修正 */
     #penalty-toast {
       position: absolute;
       top: 50%;
@@ -271,7 +274,6 @@
       transition: opacity 0.5s ease;
       white-space: nowrap;
     }
-
     .ranking-box {
       width: 100%;
       background: #222;
@@ -313,6 +315,7 @@
   <div id="display-area">
     <div id="penalty-toast" class="hidden">客「(・д・)ﾁｯ」 (-200pt)</div>
     <div style="width: 100%;">
+      <div id="tencho-cheer" class="tencho-cheer" style="color:#00ff66;">店主「基本を忘れるな！」</div>
       <div class="tencho-call">客のコール（全集中で聞け！）:</div>
       <div id="target-call-box" class="customer-call">???</div>
     </div>
@@ -357,7 +360,7 @@
       <button class="topping-btn" onclick="addWord('アブラマシマシ')">アブラマシマシ</button>
     </div>
 
-    <!-- カラメ（2枠配置） -->
+    <!-- カラメ -->
     <div class="control-row-karame">
       <button class="topping-btn" onclick="addWord('カラメ')">カラメ</button>
       <button class="topping-btn" onclick="addWord('カラカラ')">カラカラ</button>
@@ -375,7 +378,7 @@
       【助手への命令】<br>
       客が一瞬だけ発するコールを即座に完璧に聞き取れ！<br>
       覚えたら<b>すぐにボタンを押して答えろ！（即答ボーナス）</b><br>
-      聞き逃したら<b>「もう一度お願いします」</b>で再確認できるが、<b>客に舌打ちされて減点だ！</b>
+      聞き逃したら<b>「もう一度お願いします」</b>で再確認（各ステージ1回限り）できるが、<b>客に舌打ちされて減点だ！</b>
     </p>
     <button class="btn-start" onclick="startGame()">厨房に入る（スタート）</button>
     <button class="btn-ranking" onclick="showRankingOverlay()">🏆 ハイスコア TOP 5</button>
@@ -393,8 +396,8 @@
 
   <!-- ゲームオーバー画面 -->
   <div id="gameover-screen" class="overlay hidden">
-    <h1 style="color:#ff3333; font-size:26px;">「修行が足らん！！」</h1>
-    <p style="color:#ccc; font-size:13px; margin-top:3px;">店主「客のコール聞き落としてんじゃねぇ！」</p>
+    <h1 id="gameover-title" style="color:#ff3333; font-size:24px;">「修行が足らん！！」</h1>
+    <p id="gameover-sub" style="color:#ccc; font-size:13px; margin-top:4px; padding:0 10px;">店主「客のコール聞き落としてんじゃねぇ！」</p>
     
     <div style="background:#222; border:1px solid #555; padding:8px; border-radius:8px; margin:10px 0; width:100%;">
       <p style="font-size:11px; color:#aaa;">実際の客のコール:</p>
@@ -417,6 +420,8 @@
 <script>
   let stage = 1;
   let score = 0;
+  let retryCount = 0;     // 1ステージでの「もう一度」使用回数
+  let totalRetries = 0;   // ゲーム全体の「もう一度」使用累計
   let targetCallRaw = "";
   let targetCallDisplay = "";
   let userCallWords = [];
@@ -538,6 +543,7 @@
     playSound('tap');
     stage = 1;
     score = 0;
+    totalRetries = 0; // 累計聞き直し回数をリセット
     document.getElementById('start-screen').classList.add('hidden');
     document.getElementById('gameover-screen').classList.add('hidden');
     document.getElementById('ranking-screen').classList.add('hidden');
@@ -584,6 +590,13 @@
 
   function nextStage() {
     userCallWords = [];
+    retryCount = 0;
+    
+    const retryBtn = document.getElementById('retry-btn');
+    retryBtn.disabled = false;
+    retryBtn.style.opacity = "1";
+    retryBtn.innerText = "もう一度お願いします";
+
     updateMyCallDisplay();
     
     let parts = generateCallParts(stage);
@@ -595,7 +608,48 @@
 
   function showCustomerCall() {
     const targetBox = document.getElementById('target-call-box');
+    const cheerBox = document.getElementById('tencho-cheer');
+    
     targetBox.innerText = targetCallDisplay;
+
+    // --- ステージ & 聞き直し状況に応じた店主の発破メッセージ ---
+    if (retryCount > 0) {
+      if (stage <= 4) {
+        const msgs = ["店主「一回で聞き取れ！」", "店主「集中が足りんぞ！」", "店主「耳を研ぎ澄ませ！」"];
+        cheerBox.innerText = msgs[Math.floor(Math.random() * msgs.length)];
+        cheerBox.style.color = "#ff6666";
+      } else if (stage <= 8) {
+        const msgs = ["店主「正念場で聞き直すな！」", "店主「聞き直してる暇はないぞ！」", "店主「客を待たせるな！」"];
+        cheerBox.innerText = msgs[Math.floor(Math.random() * msgs.length)];
+        cheerBox.style.color = "#ff3333";
+      } else if (stage <= 12) {
+        const msgs = ["店主「二度聞きは命取りだ！」", "店主「喰らいつけって言ったろ！」", "店主「次ミスったら終わりだぞ！」"];
+        cheerBox.innerText = msgs[Math.floor(Math.random() * msgs.length)];
+        cheerBox.style.color = "#ff0055";
+      } else {
+        const msgs = ["店主「神域で迷うな！」", "店主「集中を切らすな！」", "店主「ここで踏みとどまれ！」"];
+        cheerBox.innerText = msgs[Math.floor(Math.random() * msgs.length)];
+        cheerBox.style.color = "#ff0000";
+      }
+    } else {
+      if (stage <= 4) {
+        const msgs = ["店主「基本を忘れるな！」", "店主「声によく耳をすませろ！」", "店主「落ち着いてコールを聞け！」"];
+        cheerBox.innerText = msgs[Math.floor(Math.random() * msgs.length)];
+        cheerBox.style.color = "#00ff66";
+      } else if (stage <= 8) {
+        const msgs = ["店主「ここが正念場だぞ！！」", "店主「客の勢いに負けるな！」", "店主「ここを乗り越えろ！」"];
+        cheerBox.innerText = msgs[Math.floor(Math.random() * msgs.length)];
+        cheerBox.style.color = "#ffe600";
+      } else if (stage <= 12) {
+        const msgs = ["店主「まだまだ！！ここからが本番だ！」", "店主「限界を超えろ！」", "店主「客のラッシュに喰らいつけ！」"];
+        cheerBox.innerText = msgs[Math.floor(Math.random() * msgs.length)];
+        cheerBox.style.color = "#ff9900";
+      } else {
+        const msgs = ["店主「神域の聞き取り…！いけるぞ！」", "店主「ゾーンに入ってやがる…！」", "店主「伝説の助手を目指せ！！」"];
+        cheerBox.innerText = msgs[Math.floor(Math.random() * msgs.length)];
+        cheerBox.style.color = "#ff3333";
+      }
+    }
     
     if (targetCallDisplay.length > 20) {
       targetBox.style.fontSize = "16px";
@@ -632,6 +686,16 @@
   }
 
   function askAgain() {
+    if (retryCount >= 1) return;
+
+    retryCount++;
+    totalRetries++; // 累計回数を加算
+
+    const retryBtn = document.getElementById('retry-btn');
+    retryBtn.disabled = true;
+    retryBtn.style.opacity = "0.5";
+    retryBtn.innerText = "もう一度お願いします（使用済み）";
+
     playSound('tongue');
     score = Math.max(0, score - 200);
     updateUI();
@@ -711,8 +775,45 @@
     playSound('fail');
     saveHighScore(score, stage - 1);
 
+    const clearedCount = stage - 1; // 捌いた人数
+    let titleMsg = "「修行が足らん！！」";
+    let subMsg = "店主「客のコール聞き落としてんじゃねぇ！」";
+
+    // --- 捌いた人数 & 累計聞き直し回数に応じたコメント分岐 ---
+    if (clearedCount < 5) {
+      titleMsg = "「まだまだ半人前！」";
+      subMsg = "店主「基本すら怪しいぞ！最初から修行し直してこい！」";
+    } else if (clearedCount <= 8) {
+      if (totalRetries >= 2) {
+        titleMsg = "「雑な仕事だな…」";
+        subMsg = `店主「捌けたはいいが、聞き直し(${totalRetries}回)多すぎだ！客に舌打ちされまくりだぞ！」`;
+      } else {
+        titleMsg = "「ここが正念場だった…！」";
+        subMsg = "店主「いい勢いだったが正念場で撃沈か…！次はここを乗り越えろ！」";
+      }
+    } else if (clearedCount <= 12) {
+      if (totalRetries >= 3) {
+        titleMsg = "「惜しいが聞き直し過多！」";
+        subMsg = `店主「かなり捌けたが、聞き直し(${totalRetries}回)で客のイライラが限界だったぞ！」`;
+      } else {
+        titleMsg = "「見事な捌きだった！」";
+        subMsg = "店主「大した腕前だ！あと一歩で伝説の助手だったな…！」";
+      }
+    } else {
+      if (totalRetries >= 4) {
+        titleMsg = "「神域…だが爪が甘い！」";
+        subMsg = `店主「凄まじい集中力だったが、${totalRetries}回の聞き直しが悔やまれるな…！」`;
+      } else {
+        titleMsg = "「伝説の助手！！」";
+        subMsg = "店主「神懸かり的な聞き取り能力…！もうお前にこの厨房を任せられる！」";
+      }
+    }
+
+    document.getElementById('gameover-title').innerText = titleMsg;
+    document.getElementById('gameover-sub').innerText = subMsg;
+
     document.getElementById('correct-ans').innerText = targetCallDisplay;
-    document.getElementById('res-stage').innerText = stage - 1;
+    document.getElementById('res-stage').innerText = clearedCount;
     document.getElementById('res-score').innerText = score;
     
     renderScoreList('gameover-score-list');
