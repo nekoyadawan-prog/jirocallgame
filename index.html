@@ -1,0 +1,834 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>二郎系コール瞬間覚え選手権 - 店員修行編</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    html, body {
+      width: 100%;
+      height: 100%;
+      background-color: #1a1a1a;
+      color: #fff;
+      font-family: 'Helvetica Neue', Arial, 'メイリオ', sans-serif;
+      overflow: hidden;
+    }
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 8px;
+    }
+    #game-card {
+      width: 100%;
+      max-width: 450px;
+      height: 100%;
+      max-height: 700px;
+      /* LINE内ブラウザ等での高さ潰れ対策 (dvh) */
+      height: 96dvh; 
+      background-color: #ffe600;
+      color: #000;
+      border: 6px solid #000;
+      border-radius: 12px;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.7);
+    }
+    header {
+      background: #000;
+      color: #ffe600;
+      padding: 8px 10px;
+      font-weight: bold;
+      font-size: 16px;
+      display: flex;
+      justify-content: space-between;
+      z-index: 3;
+      flex-shrink: 0;
+    }
+    .header-stat {
+      font-size: 13px;
+    }
+    .header-val {
+      color: #fff;
+      font-size: 16px;
+    }
+    #display-area {
+      flex: 1;
+      background-image: url('bg.jpg');
+      background-size: cover;
+      background-position: center;
+      color: #fff;
+      margin: 6px;
+      border: 3px solid #000;
+      border-radius: 8px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+      min-height: 140px;
+    }
+    #display-area::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0, 0, 0, 0.25);
+      z-index: 1;
+    }
+    #display-area > * {
+      position: relative;
+      z-index: 2;
+    }
+    .tencho-cheer {
+      font-size: 12px;
+      font-weight: bold;
+      margin-bottom: 2px;
+      text-shadow: 1px 1px 3px #000, -1px -1px 3px #000;
+      letter-spacing: 0.5px;
+    }
+    .tencho-call {
+      color: #ffe600;
+      font-size: 13px;
+      font-weight: bold;
+      margin-bottom: 4px;
+      text-shadow: 2px 2px 4px #000;
+    }
+    .customer-call {
+      font-size: 18px;
+      font-weight: bold;
+      color: #ff3333;
+      background: rgba(0, 0, 0, 0.85);
+      padding: 6px 8px;
+      border-radius: 6px;
+      border: 2px solid #ffe600;
+      word-break: break-all;
+      min-height: 52px;
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      letter-spacing: 0.5px;
+      line-height: 1.2;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+    }
+    .timer-bar-bg {
+      width: 100%;
+      height: 8px;
+      background: #444;
+      border-radius: 4px;
+      margin-top: 6px;
+      overflow: hidden;
+    }
+    #timer-bar {
+      width: 100%;
+      height: 100%;
+      background: #00ff66;
+      transition: width 0.1s linear;
+    }
+    .btn-retry {
+      background: rgba(85, 85, 85, 0.9);
+      color: #fff;
+      border: 2px solid #ccc;
+      padding: 5px 12px;
+      font-weight: bold;
+      font-size: 12px;
+      border-radius: 20px;
+      cursor: pointer;
+      margin-top: 4px;
+      box-shadow: 0 2px 0 #222;
+      transition: opacity 0.2s, background-color 0.2s;
+    }
+    .btn-retry:active {
+      transform: translateY(2px);
+      box-shadow: 0 1px 0 #222;
+    }
+    #input-area {
+      padding: 6px 8px 8px 8px;
+      background: #ffe600;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      z-index: 3;
+      flex-shrink: 0;
+    }
+    .my-call-display {
+      background: #fff;
+      color: #000;
+      border: 2px solid #000;
+      padding: 6px;
+      font-size: 14px;
+      font-weight: bold;
+      min-height: 36px;
+      text-align: center;
+      border-radius: 6px;
+      letter-spacing: 0.5px;
+      word-break: break-all;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .control-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 3px;
+    }
+    .control-row-karame {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 3px;
+    }
+    .topping-btn {
+      background: #000;
+      color: #fff;
+      border: none;
+      padding: 8px 2px;
+      font-size: 11px;
+      font-weight: bold;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .topping-btn:active {
+      background: #444;
+    }
+    .action-row {
+      display: flex;
+      gap: 6px;
+      margin-top: 4px;
+    }
+    .btn-action {
+      flex: 1;
+      padding: 8px;
+      font-size: 15px;
+      font-weight: bold;
+      border: 2px solid #000;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    .btn-clear {
+      background: #ff4444;
+      color: #fff;
+    }
+    .btn-submit {
+      background: #00cc44;
+      color: #fff;
+    }
+    .overlay {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0, 0, 0, 0.92);
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 16px;
+      text-align: center;
+      z-index: 10;
+      overflow-y: auto;
+    }
+    #start-screen {
+      background-image: url('title.jpg');
+      background-size: cover;
+      background-position: center;
+    }
+    .hidden { display: none !important; }
+    .btn-start {
+      background: #ffe600;
+      color: #000;
+      border: 3px solid #000;
+      padding: 10px 24px;
+      font-size: 16px;
+      font-weight: bold;
+      border-radius: 25px;
+      cursor: pointer;
+      margin-top: 12px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+    }
+    .btn-ranking {
+      background: rgba(51, 51, 51, 0.9);
+      color: #ffe600;
+      border: 2px solid #ffe600;
+      padding: 6px 16px;
+      font-size: 13px;
+      font-weight: bold;
+      border-radius: 20px;
+      cursor: pointer;
+      margin-top: 8px;
+    }
+    #penalty-toast {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(255, 0, 0, 0.9);
+      color: #fff;
+      font-size: 15px;
+      font-weight: bold;
+      padding: 6px 14px;
+      border-radius: 8px;
+      border: 2px solid #fff;
+      pointer-events: none;
+      z-index: 5;
+      transition: opacity 0.5s ease;
+      white-space: nowrap;
+    }
+    .ranking-box {
+      width: 100%;
+      background: #222;
+      border: 1px solid #444;
+      border-radius: 8px;
+      padding: 8px;
+      margin: 8px 0;
+      font-size: 12px;
+    }
+    .ranking-list {
+      list-style: none;
+      text-align: left;
+      margin-top: 4px;
+    }
+    .ranking-item {
+      display: flex;
+      justify-content: space-between;
+      padding: 3px 6px;
+      border-bottom: 1px solid #333;
+    }
+    .ranking-item:last-child {
+      border-bottom: none;
+    }
+    .rank-num {
+      font-weight: bold;
+      color: #ffe600;
+      width: 28px;
+    }
+  </style>
+</head>
+<body>
+
+<div id="game-card">
+  <header>
+    <div class="header-stat">STAGE: <span id="val-stage" class="header-val">1</span></div>
+    <div class="header-stat">SCORE: <span id="val-score" class="header-val">0</span></div>
+  </header>
+
+  <div id="display-area">
+    <div id="penalty-toast" class="hidden">客「(・д・)ﾁｯ」 (-200pt)</div>
+    <div style="width: 100%;">
+      <div id="tencho-cheer" class="tencho-cheer" style="color:#00ff66;">店主「基本を忘れるな！」</div>
+      <div class="tencho-call">客のコール（全集中で聞け！）:</div>
+      <div id="target-call-box" class="customer-call">???</div>
+    </div>
+    <div style="width: 100%;">
+      <button id="retry-btn" class="btn-retry" onclick="askAgain()">もう一度お願いします</button>
+      <div class="timer-bar-bg">
+        <div id="timer-bar"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="input-area">
+    <div id="my-call" class="my-call-display">コールを入力してください</div>
+
+    <div style="display: flex; gap: 3px;">
+      <button class="topping-btn" style="background:#ff9900; flex:1;" onclick="addWord('全マシ')">全マシ</button>
+      <button class="topping-btn" style="background:#cc0000; flex:1;" onclick="addWord('全マシマシ')">全マシマシ</button>
+      <button class="topping-btn" style="background:#666666; flex:1;" onclick="addWord('そのまま')">そのまま</button>
+    </div>
+
+    <!-- ニンニク -->
+    <div class="control-row">
+      <button class="topping-btn" onclick="addWord('ニンニクスナメ')">ニンニク少なめ</button>
+      <button class="topping-btn" onclick="addWord('ニンニク')">ニンニク</button>
+      <button class="topping-btn" onclick="addWord('ニンニクマシ')">ニンニクマシ</button>
+      <button class="topping-btn" onclick="addWord('ニンニクマシマシ')">ニンニクマシマシ</button>
+    </div>
+
+    <!-- ヤサイ -->
+    <div class="control-row">
+      <button class="topping-btn" onclick="addWord('ヤサイスクナメ')">ヤサイ少なめ</button>
+      <button class="topping-btn" onclick="addWord('ヤサイ')">ヤサイ</button>
+      <button class="topping-btn" onclick="addWord('ヤサイマシ')">ヤサイマシ</button>
+      <button class="topping-btn" onclick="addWord('ヤサイマシマシ')">ヤサイマシマシ</button>
+    </div>
+
+    <!-- アブラ -->
+    <div class="control-row">
+      <button class="topping-btn" onclick="addWord('アブラスクナメ')">アブラ少なめ</button>
+      <button class="topping-btn" onclick="addWord('アブラ')">アブラ</button>
+      <button class="topping-btn" onclick="addWord('アブラマシ')">アブラマシ</button>
+      <button class="topping-btn" onclick="addWord('アブラマシマシ')">アブラマシマシ</button>
+    </div>
+
+    <!-- カラメ -->
+    <div class="control-row-karame">
+      <button class="topping-btn" onclick="addWord('カラメ')">カラメ</button>
+      <button class="topping-btn" onclick="addWord('カラカラ')">カラカラ</button>
+    </div>
+
+    <div class="action-row">
+      <button class="btn-action btn-clear" onclick="clearCall()">リセット</button>
+      <button class="btn-action btn-submit" onclick="submitCall()">コール伝達！</button>
+    </div>
+  </div>
+
+  <!-- スタート画面 -->
+  <div id="start-screen" class="overlay">
+    <p style="font-size:12px; line-height:1.4; text-align:left; background:rgba(0,0,0,0.85); padding:10px; border-radius:8px; border:1px solid #ffe600; margin-bottom:8px;">
+      【助手への命令】<br>
+      客が一瞬だけ発するコールを即座に完璧に聞き取れ！<br>
+      覚えたら<b>すぐにボタンを押して答えろ！（即答ボーナス）</b><br>
+      聞き逃したら<b>「もう一度お願いします」</b>で再確認（各ステージ1回限り）できるが、<b>客に舌打ちされて減点だ！</b>
+    </p>
+    <button class="btn-start" onclick="startGame()">厨房に入る（スタート）</button>
+    <button class="btn-ranking" onclick="showRankingOverlay()">🏆 ハイスコア TOP 5</button>
+  </div>
+
+  <!-- ランキング画面 -->
+  <div id="ranking-screen" class="overlay hidden">
+    <h2 style="color:#ffe600; margin-bottom:8px; font-size:18px;">🏆 ハイスコア TOP 5</h2>
+    <div class="ranking-box">
+      <ul id="high-score-list" class="ranking-list">
+      </ul>
+    </div>
+    <button class="btn-start" style="padding: 6px 16px; font-size: 14px;" onclick="hideRankingOverlay()">閉じる</button>
+  </div>
+
+  <!-- ゲームオーバー画面 -->
+  <div id="gameover-screen" class="overlay hidden">
+    <h1 id="gameover-title" style="color:#ff3333; font-size:20px;">「修行が足らん！！」</h1>
+    <p id="gameover-sub" style="color:#ccc; font-size:12px; margin-top:2px; padding:0 6px;">店主「客のコール聞き落としてんじゃねぇ！」</p>
+    
+    <div style="background:#222; border:1px solid #555; padding:6px; border-radius:8px; margin:8px 0; width:100%;">
+      <p style="font-size:11px; color:#aaa;">実際の客のコール:</p>
+      <p id="correct-ans" style="color:#ffe600; font-weight:bold; font-size:14px; margin-top:2px;"></p>
+    </div>
+
+    <p style="font-size:12px;">捌いた客数: <span id="res-stage" style="font-weight:bold; color:#fff;">0</span> 人</p>
+    <p style="font-size:16px; font-weight:bold; color:#00ff66; margin-top:2px;">FINAL SCORE: <span id="res-score">0</span></p>
+
+    <div class="ranking-box" style="margin: 6px 0;">
+      <div style="font-weight:bold; color:#ffe600; font-size:11px; margin-bottom:2px;">殿堂入り（TOP 5）</div>
+      <ul id="gameover-score-list" class="ranking-list">
+      </ul>
+    </div>
+
+    <button class="btn-start" onclick="startGame()">もう一度修行する</button>
+  </div>
+</div>
+
+<script>
+  let stage = 1;
+  let score = 0;
+  let retryCount = 0;     
+  let totalRetries = 0;   
+  let targetCallRaw = "";
+  let targetCallDisplay = "";
+  let userCallWords = [];
+  let timerInterval = null;
+  let isMemorizing = false;
+
+  let answerStartTime = 0;
+  const TOTAL_ANSWER_TIME = 15000;
+
+  const ORDERED_TOPPINGS = ['ニンニク', 'ヤサイ', 'アブラ', 'カラメ'];
+  const STD_AMOUNTS = ['スクナメ', '', 'マシ', 'マシマシ'];
+
+  let audioCtx = null;
+
+  function initAudio() {
+    if (!audioCtx) {
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    if (audioCtx.state === 'suspended') {
+      audioCtx.resume();
+    }
+  }
+
+  function playSound(type) {
+    if (!audioCtx) return;
+
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+
+    const now = audioCtx.currentTime;
+
+    if (type === 'tap') {
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(600, now);
+      osc.frequency.exponentialRampToValueAtTime(800, now + 0.05);
+      gain.gain.setValueAtTime(0.2, now);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.05);
+      osc.start(now);
+      osc.stop(now + 0.05);
+    } else if (type === 'success') {
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(523.25, now);
+      osc.frequency.setValueAtTime(659.25, now + 0.08);
+      osc.frequency.setValueAtTime(783.99, now + 0.16);
+      osc.frequency.setValueAtTime(1046.50, now + 0.24);
+      gain.gain.setValueAtTime(0.25, now);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
+      osc.start(now);
+      osc.stop(now + 0.4);
+    } else if (type === 'fail') {
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(180, now);
+      osc.frequency.linearRampToValueAtTime(100, now + 0.35);
+      gain.gain.setValueAtTime(0.3, now);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.35);
+      osc.start(now);
+      osc.stop(now + 0.35);
+    } else if (type === 'tongue') {
+      osc.type = 'square';
+      osc.frequency.setValueAtTime(1200, now);
+      osc.frequency.exponentialRampToValueAtTime(400, now + 0.08);
+      gain.gain.setValueAtTime(0.3, now);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.08);
+      osc.start(now);
+      osc.stop(now + 0.08);
+    }
+  }
+
+  function getHighScores() {
+    const data = localStorage.getItem('jiro_high_scores');
+    return data ? JSON.parse(data) : [];
+  }
+
+  function saveHighScore(finalScore, finalStage) {
+    let scores = getHighScores();
+    scores.push({ score: finalScore, stage: finalStage, date: new Date().toLocaleDateString() });
+    scores.sort((a, b) => b.score - a.score);
+    scores = scores.slice(0, 5);
+    localStorage.setItem('jiro_high_scores', JSON.stringify(scores));
+    return scores;
+  }
+
+  function renderScoreList(elementId) {
+    const listEl = document.getElementById(elementId);
+    const scores = getHighScores();
+    listEl.innerHTML = '';
+
+    if (scores.length === 0) {
+      listEl.innerHTML = '<li style="color:#888; text-align:center;">記録はまだありません</li>';
+      return;
+    }
+
+    scores.forEach((item, index) => {
+      const li = document.createElement('li');
+      li.className = 'ranking-item';
+      li.innerHTML = `
+        <span><span class="rank-num">${index + 1}位</span> ${item.score} pt</span>
+        <span style="color:#aaa;">(${item.stage}人捌いた)</span>
+      `;
+      listEl.appendChild(li);
+    });
+  }
+
+  function showRankingOverlay() {
+    playSound('tap');
+    renderScoreList('high-score-list');
+    document.getElementById('ranking-screen').classList.remove('hidden');
+  }
+
+  function hideRankingOverlay() {
+    playSound('tap');
+    document.getElementById('ranking-screen').classList.add('hidden');
+  }
+
+  function startGame() {
+    initAudio();
+    playSound('tap');
+    stage = 1;
+    score = 0;
+    totalRetries = 0;
+    document.getElementById('start-screen').classList.add('hidden');
+    document.getElementById('gameover-screen').classList.add('hidden');
+    document.getElementById('ranking-screen').classList.add('hidden');
+    updateUI();
+    nextStage();
+  }
+
+  function updateUI() {
+    document.getElementById('val-stage').innerText = stage;
+    document.getElementById('val-score').innerText = score;
+  }
+
+  function generateCallParts(stageNum) {
+    if (stageNum === 1) return ["ニンニクマシ"];
+    if (stageNum === 2) return ["ニンニク", "ヤサイマシ"];
+    if (stageNum === 3) return ["全マシ"];
+    if (stageNum === 4) return ["ニンニク", "ヤサイマシマシ", "カラカラ"];
+
+    if (Math.random() < 0.1) return ["そのまま"];
+
+    let itemCount = Math.min(2 + Math.floor(stageNum / 3), 4);
+    let selectedIndices = [];
+    while (selectedIndices.length < itemCount) {
+      let r = Math.floor(Math.random() * 4);
+      if (!selectedIndices.includes(r)) selectedIndices.push(r);
+    }
+
+    selectedIndices.sort((a, b) => a - b);
+
+    let parts = [];
+    selectedIndices.forEach(idx => {
+      let toppingName = ORDERED_TOPPINGS[idx];
+      if (toppingName === 'カラメ') {
+        let karameOptions = ['カラメ', 'カラカラ'];
+        parts.push(karameOptions[Math.floor(Math.random() * karameOptions.length)]);
+      } else {
+        let amount = STD_AMOUNTS[Math.floor(Math.random() * STD_AMOUNTS.length)];
+        parts.push(toppingName + amount);
+      }
+    });
+
+    return parts;
+  }
+
+  function nextStage() {
+    userCallWords = [];
+    retryCount = 0;
+    
+    const retryBtn = document.getElementById('retry-btn');
+    retryBtn.disabled = false;
+    retryBtn.style.opacity = "1";
+    retryBtn.innerText = "もう一度お願いします";
+
+    updateMyCallDisplay();
+    
+    let parts = generateCallParts(stage);
+    targetCallRaw = parts.join('');
+    targetCallDisplay = parts.join(' / ');
+
+    showCustomerCall();
+  }
+
+  function showCustomerCall() {
+    const targetBox = document.getElementById('target-call-box');
+    const cheerBox = document.getElementById('tencho-cheer');
+    
+    targetBox.innerText = targetCallDisplay;
+
+    if (retryCount > 0) {
+      if (stage <= 4) {
+        const msgs = ["店主「一回で聞き取れ！」", "店主「集中が足りんぞ！」", "店主「耳を研ぎ澄ませ！」"];
+        cheerBox.innerText = msgs[Math.floor(Math.random() * msgs.length)];
+        cheerBox.style.color = "#ff6666";
+      } else if (stage <= 8) {
+        const msgs = ["店主「正念場で聞き直すな！」", "店主「聞き直してる暇はないぞ！」", "店主「客を待たせるな！」"];
+        cheerBox.innerText = msgs[Math.floor(Math.random() * msgs.length)];
+        cheerBox.style.color = "#ff3333";
+      } else if (stage <= 12) {
+        const msgs = ["店主「二度聞きは命取りだ！」", "店主「喰らいつけって言ったろ！」", "店主「次ミスったら終わりだぞ！」"];
+        cheerBox.innerText = msgs[Math.floor(Math.random() * msgs.length)];
+        cheerBox.style.color = "#ff0055";
+      } else {
+        const msgs = ["店主「神域で迷うな！」", "店主「集中を切らすな！」", "店主「ここで踏みとどまれ！」"];
+        cheerBox.innerText = msgs[Math.floor(Math.random() * msgs.length)];
+        cheerBox.style.color = "#ff0000";
+      }
+    } else {
+      if (stage <= 4) {
+        const msgs = ["店主「基本を忘れるな！」", "店主「声によく耳をすませろ！」", "店主「落ち着いてコールを聞け！」"];
+        cheerBox.innerText = msgs[Math.floor(Math.random() * msgs.length)];
+        cheerBox.style.color = "#00ff66";
+      } else if (stage <= 8) {
+        const msgs = ["店主「ここが正念場だぞ！！」", "店主「客の勢いに負けるな！」", "店主「ここを乗り越えろ！」"];
+        cheerBox.innerText = msgs[Math.floor(Math.random() * msgs.length)];
+        cheerBox.style.color = "#ffe600";
+      } else if (stage <= 12) {
+        const msgs = ["店主「まだまだ！！ここからが本番だ！」", "店主「限界を超えろ！」", "店主「客のラッシュに喰らいつけ！」"];
+        cheerBox.innerText = msgs[Math.floor(Math.random() * msgs.length)];
+        cheerBox.style.color = "#ff9900";
+      } else {
+        const msgs = ["店主「神域の聞き取り…！いけるぞ！」", "店主「ゾーンに入ってやがる…！」", "店主「伝説の助手を目指せ！！」"];
+        cheerBox.innerText = msgs[Math.floor(Math.random() * msgs.length)];
+        cheerBox.style.color = "#ff3333";
+      }
+    }
+    
+    if (targetCallDisplay.length > 20) {
+      targetBox.style.fontSize = "14px";
+    } else if (targetCallDisplay.length > 14) {
+      targetBox.style.fontSize = "16px";
+    } else {
+      targetBox.style.fontSize = "18px";
+    }
+
+    isMemorizing = true;
+
+    let memoTotalTime = Math.max(3500 - (stage * 150), 1200);
+    let memoStartTime = Date.now();
+
+    clearInterval(timerInterval);
+    timerInterval = setInterval(() => {
+      let delta = Date.now() - memoStartTime;
+      let pct = 100 - (delta / memoTotalTime * 100);
+      document.getElementById('timer-bar').style.width = Math.max(pct, 0) + '%';
+
+      if (delta >= memoTotalTime) {
+        finishMemorizing();
+      }
+    }, 50);
+  }
+
+  function finishMemorizing() {
+    clearInterval(timerInterval);
+    const targetBox = document.getElementById('target-call-box');
+    targetBox.innerText = "??? (コールを入力！)";
+    targetBox.style.fontSize = "15px";
+    isMemorizing = false;
+    startAnswerTimer();
+  }
+
+  function askAgain() {
+    if (retryCount >= 1) return;
+
+    retryCount++;
+    totalRetries++;
+
+    const retryBtn = document.getElementById('retry-btn');
+    retryBtn.disabled = true;
+    retryBtn.style.opacity = "0.5";
+    retryBtn.innerText = "もう一度お願いします（使用済み）";
+
+    playSound('tongue');
+    score = Math.max(0, score - 200);
+    updateUI();
+
+    const toast = document.getElementById('penalty-toast');
+    toast.classList.remove('hidden');
+    setTimeout(() => toast.classList.add('hidden'), 1200);
+
+    showCustomerCall();
+  }
+
+  function startAnswerTimer() {
+    answerStartTime = Date.now();
+    clearInterval(timerInterval);
+    timerInterval = setInterval(() => {
+      let delta = Date.now() - answerStartTime;
+      let pct = 100 - (delta / TOTAL_ANSWER_TIME * 100);
+      document.getElementById('timer-bar').style.width = Math.max(pct, 0) + '%';
+
+      if (delta >= TOTAL_ANSWER_TIME) {
+        clearInterval(timerInterval);
+        gameOver();
+      }
+    }, 50);
+  }
+
+  function addWord(word) {
+    if (isMemorizing) {
+      finishMemorizing();
+    }
+    playSound('tap');
+    userCallWords.push(word);
+    updateMyCallDisplay();
+  }
+
+  function clearCall() {
+    if (isMemorizing) return;
+    playSound('tap');
+    userCallWords = [];
+    updateMyCallDisplay();
+  }
+
+  function updateMyCallDisplay() {
+    const disp = document.getElementById('my-call');
+    if (userCallWords.length === 0) {
+      disp.innerText = "コールを入力してください";
+      disp.style.color = "#888";
+    } else {
+      disp.innerText = userCallWords.join(' / ');
+      disp.style.color = "#000";
+    }
+  }
+
+  function submitCall() {
+    if (isMemorizing) return;
+    clearInterval(timerInterval);
+
+    let myFullCall = userCallWords.join('');
+    if (myFullCall === targetCallRaw) {
+      playSound('success');
+
+      let elapsedTime = Date.now() - answerStartTime;
+      let remainingRatio = Math.max(0, (TOTAL_ANSWER_TIME - elapsedTime) / TOTAL_ANSWER_TIME);
+      let quickBonus = Math.round(remainingRatio * 500);
+
+      score += (stage * 100 + 50) + quickBonus;
+
+      stage++;
+      updateUI();
+      nextStage();
+    } else {
+      gameOver();
+    }
+  }
+
+  function gameOver() {
+    playSound('fail');
+    saveHighScore(score, stage - 1);
+
+    const clearedCount = stage - 1;
+    let titleMsg = "「修行が足らん！！」";
+    let subMsg = "店主「客のコール聞き落としてんじゃねぇ！」";
+
+    if (clearedCount < 5) {
+      titleMsg = "「まだまだ半人前！」";
+      subMsg = "店主「基本すら怪しいぞ！最初から修行し直してこい！」";
+    } else if (clearedCount <= 8) {
+      if (totalRetries >= 2) {
+        titleMsg = "「雑な仕事だな…」";
+        subMsg = `店主「捌けたはいいが、聞き直し(${totalRetries}回)多すぎだ！客に舌打ちされまくりだぞ！」`;
+      } else {
+        titleMsg = "「ここが正念場だった…！」";
+        subMsg = "店主「いい勢いだったが正念場で撃沈か…！次はここを乗り越えろ！」";
+      }
+    } else if (clearedCount <= 12) {
+      if (totalRetries >= 3) {
+        titleMsg = "「惜しいが聞き直し過多！」";
+        subMsg = `店主「かなり捌けたが、聞き直し(${totalRetries}回)で客のイライラが限界だったぞ！」`;
+      } else {
+        titleMsg = "「見事な捌きだった！」";
+        subMsg = "店主「大した腕前だ！あと一歩で伝説の助手だったな…！」";
+      }
+    } else {
+      if (totalRetries >= 4) {
+        titleMsg = "「神域…だが爪が甘い！」";
+        subMsg = `店主「凄まじい集中力だったが、${totalRetries}回の聞き直しが悔やまれるな…！」`;
+      } else {
+        titleMsg = "「伝説の助手！！」";
+        subMsg = "店主「神懸かり的な聞き取り能力…！もうお前にこの厨房を任せられる！」";
+      }
+    }
+
+    document.getElementById('gameover-title').innerText = titleMsg;
+    document.getElementById('gameover-sub').innerText = subMsg;
+
+    document.getElementById('correct-ans').innerText = targetCallDisplay;
+    document.getElementById('res-stage').innerText = clearedCount;
+    document.getElementById('res-score').innerText = score;
+    
+    renderScoreList('gameover-score-list');
+
+    document.getElementById('gameover-screen').classList.remove('hidden');
+  }
+</script>
+</body>
+</html>
